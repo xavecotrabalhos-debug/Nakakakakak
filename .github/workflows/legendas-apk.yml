@@ -35,8 +35,16 @@ jobs:
         with:
           packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
-      - name: Preparar Gradle
-        uses: gradle/actions/setup-gradle@v4
+      - name: Instalar Gradle 8.7
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fL --retry 5 --retry-all-errors \
+            "https://services.gradle.org/distributions/gradle-8.7-bin.zip" \
+            -o /tmp/gradle-8.7-bin.zip
+          unzip -q /tmp/gradle-8.7-bin.zip -d /opt
+          echo "/opt/gradle-8.7/bin" >> "$GITHUB_PATH"
+          /opt/gradle-8.7/bin/gradle --version
 
       - name: Extrair o projeto do ZIP
         shell: bash
@@ -51,8 +59,6 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          MODEL_DIR=".build-src/legendas/app/src/main/assets/model"
-          mkdir -p "$MODEL_DIR"
           curl -fL --retry 5 --retry-all-errors --connect-timeout 30 \
             "https://github.com/BartekReterski/VoskModels/releases/download/v1/vosk-model-small-pt-0.3.zip" \
             -o /tmp/vosk-model-pt.zip
@@ -63,24 +69,21 @@ jobs:
           target = pathlib.Path(".build-src/legendas/app/src/main/assets/model")
           extract.mkdir(parents=True, exist_ok=True)
           with zipfile.ZipFile(archive) as z:
-              print("Model archive entries:", len(z.namelist()))
-              print("Archive test:", z.testzip())
-              for info in z.infolist():
-                  mode = (info.external_attr >> 16) & 0o170000
-                  print("ZIP ENTRY:", repr(info.filename), "mode:", oct(mode), "size:", info.file_size)
+              bad_member = z.testzip()
+              if bad_member:
+                  raise SystemExit(f"Corrupt Vosk model entry: {bad_member}")
               z.extractall(extract)
-          print("Extracted tree:")
-          for p in sorted(extract.rglob("*")):
-              print("DIR:" if p.is_dir() else "FILE:", p, "->", p.read_text(errors="replace")[:200] if p.is_symlink() else "")
-          candidates = [p.parent for p in extract.rglob("am")
-                        if (p.is_dir() or p.is_symlink()) and (p.parent / "conf").exists()]
-          if not candidates:
-              raise SystemExit("Could not find Vosk model folders 'am' and 'conf'")
-          shutil.copytree(candidates[0], target, dirs_exist_ok=True)
-          if not (target / "am").exists() or not (target / "conf").exists():
-              raise SystemExit("Vosk model folders were not copied correctly")
-          print("Vosk model copied from:", candidates[0])
-          print("Model size:", sum(p.stat().st_size for p in target.rglob("*") if p.is_file()))
+          source = extract / "vosk-model-small-pt-0.3"
+          required = [
+              "final.mdl", "mfcc.conf", "HCLr.fst", "Gr.fst",
+              "disambig_tid.int", "word_boundary.int", "ivector/final.ie"
+          ]
+          missing = [name for name in required if not (source / name).is_file()]
+          if missing:
+              raise SystemExit(f"Missing Vosk model files: {missing}")
+          shutil.copytree(source, target, dirs_exist_ok=True)
+          print("Vosk legacy model files copied:", len(list(target.rglob("*"))))
+          print("Vosk model size:", sum(p.stat().st_size for p in target.rglob("*") if p.is_file()))
           PY
 
       - name: Compilar APK
