@@ -65,14 +65,16 @@ jobs:
           with zipfile.ZipFile(archive) as z:
               print("Model archive entries:", len(z.namelist()))
               print("Archive test:", z.testzip())
+              for info in z.infolist():
+                  mode = (info.external_attr >> 16) & 0o170000
+                  print("ZIP ENTRY:", repr(info.filename), "mode:", oct(mode), "size:", info.file_size)
               z.extractall(extract)
+          print("Extracted tree:")
+          for p in sorted(extract.rglob("*")):
+              print("DIR:" if p.is_dir() else "FILE:", p, "->", p.read_text(errors="replace")[:200] if p.is_symlink() else "")
           candidates = [p.parent for p in extract.rglob("am")
-                        if p.is_dir() and (p.parent / "conf").is_dir()]
+                        if (p.is_dir() or p.is_symlink()) and (p.parent / "conf").exists()]
           if not candidates:
-              print("Extracted directories:")
-              for p in extract.rglob("*"):
-                  if p.is_dir():
-                      print(p)
               raise SystemExit("Could not find Vosk model folders 'am' and 'conf'")
           shutil.copytree(candidates[0], target, dirs_exist_ok=True)
           if not (target / "am").exists() or not (target / "conf").exists():
