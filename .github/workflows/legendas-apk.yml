@@ -35,10 +35,8 @@ jobs:
         with:
           packages: "platform-tools platforms;android-34 build-tools;34.0.0"
 
-      - name: Configurar Gradle 8.7
+      - name: Preparar Gradle
         uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "8.7"
 
       - name: Extrair o projeto do ZIP
         shell: bash
@@ -60,9 +58,13 @@ jobs:
             -o /tmp/vosk-model-pt.zip
           mkdir -p /tmp/vosk-model-pt
           unzip -q /tmp/vosk-model-pt.zip -d /tmp/vosk-model-pt
-          cp -a /tmp/vosk-model-pt/vosk-model-small-pt-0.3/. "$MODEL_DIR/"
+          MODEL_ROOT="$(find /tmp/vosk-model-pt -type d -name am -print -quit | xargs -r dirname)"
+          test -n "$MODEL_ROOT"
+          test -d "$MODEL_ROOT/conf"
+          cp -a "$MODEL_ROOT/." "$MODEL_DIR/"
           test -d "$MODEL_DIR/am"
           test -d "$MODEL_DIR/conf"
+          du -sh "$MODEL_DIR"
 
       - name: Compilar APK
         run: gradle -p .build-src/legendas clean assembleDebug --no-daemon
