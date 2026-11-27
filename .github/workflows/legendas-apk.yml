@@ -54,17 +54,32 @@ jobs:
           MODEL_DIR=".build-src/legendas/app/src/main/assets/model"
           mkdir -p "$MODEL_DIR"
           curl -fL --retry 5 --retry-all-errors --connect-timeout 30 \
-            "https://alphacephei.com/vosk/models/vosk-model-small-pt-0.3.zip" \
+            "https://github.com/BartekReterski/VoskModels/releases/download/v1/vosk-model-small-pt-0.3.zip" \
             -o /tmp/vosk-model-pt.zip
-          mkdir -p /tmp/vosk-model-pt
-          unzip -q /tmp/vosk-model-pt.zip -d /tmp/vosk-model-pt
-          MODEL_ROOT="$(find /tmp/vosk-model-pt -type d -name am -print -quit | xargs -r dirname)"
-          test -n "$MODEL_ROOT"
-          test -d "$MODEL_ROOT/conf"
-          cp -a "$MODEL_ROOT/." "$MODEL_DIR/"
-          test -d "$MODEL_DIR/am"
-          test -d "$MODEL_DIR/conf"
-          du -sh "$MODEL_DIR"
+          python3 - <<'PY'
+          import pathlib, shutil, zipfile
+          archive = pathlib.Path("/tmp/vosk-model-pt.zip")
+          extract = pathlib.Path("/tmp/vosk-model-pt")
+          target = pathlib.Path(".build-src/legendas/app/src/main/assets/model")
+          extract.mkdir(parents=True, exist_ok=True)
+          with zipfile.ZipFile(archive) as z:
+              print("Model archive entries:", len(z.namelist()))
+              print("Archive test:", z.testzip())
+              z.extractall(extract)
+          candidates = [p.parent for p in extract.rglob("am")
+                        if p.is_dir() and (p.parent / "conf").is_dir()]
+          if not candidates:
+              print("Extracted directories:")
+              for p in extract.rglob("*"):
+                  if p.is_dir():
+                      print(p)
+              raise SystemExit("Could not find Vosk model folders 'am' and 'conf'")
+          shutil.copytree(candidates[0], target, dirs_exist_ok=True)
+          if not (target / "am").exists() or not (target / "conf").exists():
+              raise SystemExit("Vosk model folders were not copied correctly")
+          print("Vosk model copied from:", candidates[0])
+          print("Model size:", sum(p.stat().st_size for p in target.rglob("*") if p.is_file()))
+          PY
 
       - name: Compilar APK
         run: gradle -p .build-src/legendas clean assembleDebug --no-daemon
