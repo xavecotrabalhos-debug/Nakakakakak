@@ -28,7 +28,7 @@ public class MainActivity extends Activity {
         super.onCreate(state);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
-        page.setPadding(28, 38, 28, 28);
+        page.setPadding(dp(22), dp(28), dp(22), dp(24));
         page.setBackgroundColor(0xFF090711);
 
         TextView crown = text("✦  VIDEO CUTTER PRO  ✦", 13, 0xFFFFD66B, true);
@@ -37,18 +37,18 @@ public class MainActivity extends Activity {
 
         TextView title = text("Seus vídeos.\nUm só resultado.", 30, 0xFFFFFFFF, true);
         title.setGravity(Gravity.CENTER);
-        title.setPadding(0, 24, 0, 10);
+        title.setPadding(0, dp(20), 0, dp(10));
         page.addView(title, match());
 
         TextView subtitle = text("Recorte os 3 primeiros segundos de cada vídeo e una tudo em um MP4.", 16, 0xFFBEB7D1, false);
         subtitle.setGravity(Gravity.CENTER);
-        subtitle.setPadding(8, 0, 8, 28);
+        subtitle.setPadding(dp(8), 0, dp(8), dp(22));
         page.addView(subtitle, match());
 
         LinearLayout features = new LinearLayout(this);
         features.setOrientation(LinearLayout.HORIZONTAL);
         features.setGravity(Gravity.CENTER);
-        features.addView(feature("✂", "Corte 3s"), new LinearLayout.LayoutParams(0, 112, 1));
+        features.addView(feature("✂", "Corte 3s"), new LinearLayout.LayoutParams(0, dp(92), 1));
         features.addView(feature("⇄", "Une tudo"), new LinearLayout.LayoutParams(0, 112, 1));
         features.addView(feature("HD", "MP4"), new LinearLayout.LayoutParams(0, 112, 1));
         page.addView(features, match());
@@ -63,12 +63,12 @@ public class MainActivity extends Activity {
 
         count = text("Nenhum vídeo selecionado", 14, 0xFFE5DFFF, true);
         count.setGravity(Gravity.CENTER);
-        count.setPadding(0, 20, 0, 8);
+        count.setPadding(0, dp(18), 0, dp(8));
         page.addView(count, match());
 
         status = text("Escolha dois ou mais vídeos. A ordem selecionada será respeitada.", 14, 0xFFAAA2BD, false);
         status.setGravity(Gravity.CENTER);
-        status.setPadding(0, 0, 0, 22);
+        status.setPadding(0, 0, 0, dp(18));
         page.addView(status, match());
 
         shareButton = new Button(this);
@@ -89,7 +89,7 @@ public class MainActivity extends Activity {
 
         TextView privacy = text("PROCESSAMENTO LOCAL  •  SEUS ORIGINAIS NÃO SÃO ALTERADOS", 10, 0xFF777087, true);
         privacy.setGravity(Gravity.CENTER);
-        privacy.setPadding(0, 28, 0, 0);
+        privacy.setPadding(0, dp(22), 0, 0);
         page.addView(privacy, match());
         setContentView(page);
     }
@@ -99,8 +99,8 @@ public class MainActivity extends Activity {
         button.setBackgroundTintList(ColorStateList.valueOf(background));
         button.setTextSize(15);
         button.setAllCaps(false);
-        button.setMinHeight(58);
-        button.setPadding(18, 12, 18, 12);
+        button.setMinHeight(dp(56));
+        button.setPadding(dp(16), dp(10), dp(16), dp(10));
         button.setGravity(Gravity.CENTER);
         button.setElevation(3);
     }
@@ -114,15 +114,16 @@ public class MainActivity extends Activity {
     private LinearLayout feature(String symbol, String label) {
         LinearLayout card = new LinearLayout(this);
         card.setOrientation(LinearLayout.VERTICAL); card.setGravity(Gravity.CENTER);
-        card.setBackgroundColor(0xFF21152F); card.setPadding(6, 12, 6, 12);
+        card.setBackgroundColor(0xFF21152F); card.setPadding(dp(6), dp(10), dp(6), dp(10));
         TextView a = text(symbol, 25, 0xFFE08AFF, true); a.setGravity(Gravity.CENTER); card.addView(a, match());
         TextView b = text(label, 12, 0xFFFFFFFF, true); b.setGravity(Gravity.CENTER); card.addView(b, match());
         return card;
     }
+    private int dp(int value) { return Math.round(value * getResources().getDisplayMetrics().density); }
     private LinearLayout.LayoutParams match() { return new LinearLayout.LayoutParams(-1, -2); }
     private LinearLayout.LayoutParams buttonParams(int h) {
-        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, h);
-        p.setMargins(0, 10, 0, 0); return p;
+        LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(h));
+        p.setMargins(0, dp(10), 0, 0); return p;
     }
     private void openPicker() {
         Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT);
