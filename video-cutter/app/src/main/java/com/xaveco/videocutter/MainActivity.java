@@ -2,6 +2,7 @@ package com.xaveco.videocutter;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.res.ColorStateList;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -55,6 +56,7 @@ public class MainActivity extends Activity {
         pickButton = new Button(this);
         pickButton.setText("＋  SELECIONAR VÍDEOS");
         pickButton.setTextSize(17);
+        styleButton(pickButton, 0xFF7B35B5, 0xFFFFFFFF);
         pickButton.setAllCaps(false);
         pickButton.setOnClickListener(v -> openPicker());
         page.addView(pickButton, buttonParams(64));
@@ -72,6 +74,7 @@ public class MainActivity extends Activity {
         shareButton = new Button(this);
         shareButton.setText("↗  COMPARTILHAR VÍDEO FINAL");
         shareButton.setAllCaps(false);
+        styleButton(shareButton, 0xFF352344, 0xFFFFFFFF);
         shareButton.setEnabled(false);
         shareButton.setOnClickListener(v -> shareFinal());
         page.addView(shareButton, buttonParams(58));
@@ -79,6 +82,7 @@ public class MainActivity extends Activity {
         saveButton = new Button(this);
         saveButton.setText("↓  SALVAR NO APARELHO");
         saveButton.setAllCaps(false);
+        styleButton(saveButton, 0xFF352344, 0xFFFFFFFF);
         saveButton.setEnabled(false);
         saveButton.setOnClickListener(v -> saveFinal());
         page.addView(saveButton, buttonParams(58));
@@ -88,6 +92,17 @@ public class MainActivity extends Activity {
         privacy.setPadding(0, 28, 0, 0);
         page.addView(privacy, match());
         setContentView(page);
+    }
+
+    private void styleButton(Button button, int background, int foreground) {
+        button.setTextColor(foreground);
+        button.setBackgroundTintList(ColorStateList.valueOf(background));
+        button.setTextSize(15);
+        button.setAllCaps(false);
+        button.setMinHeight(58);
+        button.setPadding(18, 12, 18, 12);
+        button.setGravity(Gravity.CENTER);
+        button.setElevation(3);
     }
 
     private TextView text(String value, int size, int color, boolean bold) {
