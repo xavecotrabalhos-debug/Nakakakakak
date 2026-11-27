@@ -44,4 +44,67 @@ final class VideoTrimmer {
             extractor.release();
         }
     }
+
+    static void join(java.util.List<File> clips, File destination) throws Exception {
+        if (clips == null || clips.isEmpty()) throw new IllegalArgumentException("Nenhum trecho para unir.");
+        MediaExtractor first = new MediaExtractor();
+        MediaMuxer muxer = null;
+        boolean started = false;
+        try {
+            first.setDataSource(clips.get(0).getAbsolutePath());
+            int count = first.getTrackCount();
+            int[] outTracks = new int[count];
+            String[] mimeTypes = new String[count];
+            for (int i = 0; i < count; i++) {
+                MediaFormat fmt = first.getTrackFormat(i);
+                mimeTypes[i] = fmt.getString(MediaFormat.KEY_MIME);
+                outTracks[i] = i;
+            }
+            muxer = new MediaMuxer(destination.getAbsolutePath(), MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+            for (int i = 0; i < count; i++) muxer.addTrack(first.getTrackFormat(i));
+            muxer.start(); started = true;
+            long timelineOffsetUs = 0;
+            ByteBuffer buffer = ByteBuffer.allocate(4 * 1024 * 1024);
+            MediaCodec.BufferInfo info = new MediaCodec.BufferInfo();
+            for (File clip : clips) {
+                MediaExtractor ex = new MediaExtractor();
+                try {
+                    ex.setDataSource(clip.getAbsolutePath());
+                    if (ex.getTrackCount() != count) throw new IllegalArgumentException("Os vídeos precisam ter as mesmas faixas de áudio/vídeo.");
+                    long maxEndUs = 0;
+                    for (int i = 0; i < count; i++) {
+                        String actual = ex.getTrackFormat(i).getString(MediaFormat.KEY_MIME);
+                        if (actual == null || !actual.equals(mimeTypes[i]))
+                            throw new IllegalArgumentException("Formato de vídeo/áudio incompatível entre os arquivos.");
+                        ex.selectTrack(i);
+                    }
+                    while (true) {
+                        int track = ex.getSampleTrackIndex();
+                        if (track < 0) break;
+                        long time = ex.getSampleTime();
+                        if (time < 0) break;
+                        buffer.clear();
+                        int size = ex.readSampleData(buffer, 0);
+                        if (size > 0) {
+                            info.offset = 0;
+                            info.size = size;
+                            info.presentationTimeUs = timelineOffsetUs + time;
+                            info.flags = ex.getSampleFlags();
+                            muxer.writeSampleData(outTracks[track], buffer, info);
+                            if (time > maxEndUs) maxEndUs = time;
+                        }
+                        if (!ex.advance()) break;
+                    }
+                    timelineOffsetUs += maxEndUs + 40_000L;
+                } finally { ex.release(); }
+            }
+        } finally {
+            first.release();
+            if (muxer != null) {
+                if (started) try { muxer.stop(); } catch (Exception ignored) {}
+                muxer.release();
+            }
+        }
+    }
+
 }
